@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ["v*"]
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.discover.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Python deps
+        run: python3 -m pip install -q pyyaml packaging
+      - id: discover
+        name: Discover boards and BMGR versions
+        run: python3 ci/scripts/discover_matrix.py
+
+  test:
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate and build board
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: ${{ matrix.idf }}
+          target: ${{ matrix.target }}
+          path: ci/test_app
+          command: |
+            if [ -n "${{ matrix.component_manager }}" ]; then
+              python -m pip install -q --upgrade "${{ matrix.component_manager }}"
+            fi
+            python -m pip install -q --upgrade esp-bmgr-assist
+            python -m pip show esp-bmgr-assist esp-bmgr-py idf-component-manager || true
+            python ../scripts/pin_bmgr_version.py "${{ matrix.bmgr }}"
+            idf.py bmgr -b "${{ matrix.board }}"
+            idf.py build
+
+  upload:
+    needs: test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Upload component when the version is new
+        env:
+          IDF_COMPONENT_API_TOKEN: ${{ secrets.IDF_COMPONENT_API_TOKEN }}
+        run: |
+          if [ -z "${IDF_COMPONENT_API_TOKEN}" ]; then
+            echo "Missing GitHub secret IDF_COMPONENT_API_TOKEN"
+            exit 1
+          fi
+          python3 -m pip install -q idf-component-manager
+          compote component upload \
+            --namespace openedv \
+            --name atk_esp32_boards \
+            --allow-existing \
+            --dry-run

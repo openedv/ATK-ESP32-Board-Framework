@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: 2026 ALIENTEK
+# SPDX-License-Identifier: Apache-2.0
+
+version: "1.0.0"
+description: "Board-local AP3216C polling driver using the ESP-IDF I2C master API"
+license: "Apache-2.0"
+dependencies:
+  idf: ">=5.3"

@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: 2026 ALIENTEK
+# SPDX-License-Identifier: Apache-2.0
+
+version: "1.0"
+description: >-
+  Select the ALIENTEK 4.3-inch 800x480 RGB panel (vendor ID 0x4384)
+  and the measured GT1158 touch controller through the GT115x driver.
+  RGB pins replace the camera and I2S audio functions.
+
+apply:
+  - rgb_panel.yaml
+  - setup_touch_gt1158.c
+  - sdkconfig.defaults.board

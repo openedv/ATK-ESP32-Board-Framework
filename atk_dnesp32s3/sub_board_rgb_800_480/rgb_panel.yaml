@@ -1,0 +1,132 @@
+# SPDX-FileCopyrightText: 2026 ALIENTEK
+# SPDX-License-Identifier: Apache-2.0
+
+# Pin map and timings: vendor 23_rgb / 24_touch BSP/RGBLCD/ltdc.{h,c}.
+devices:
+  - name: xl9555
+    config:
+      # Keep PA off and assert camera PWDN while the RGB bus owns these pins.
+      output_io_level_mask: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+
+  - name: display_lcd
+    type: display_lcd
+    chip: generic_rgb
+    sub_type: rgb
+    version: default
+    depends_on: xl9555
+    config:
+      swap_xy: false
+      mirror_x: false
+      mirror_y: false
+      invert_color: false
+      need_reset: true
+      x_max: 800
+      y_max: 480
+      bits_per_pixel: 16
+      rgb_ele_order: LCD_RGB_ELEMENT_ORDER_RGB
+      data_endian: LCD_RGB_DATA_ENDIAN_LITTLE
+      frame_format: RGB565_LE
+      rgb_panel_config:
+        clk_src: LCD_CLK_SRC_PLL160M
+        data_width: 16
+        in_color_format: LCD_COLOR_FMT_RGB565
+        out_color_format: LCD_COLOR_FMT_RGB565
+        num_fbs: 1
+        # Eight complete lines; must divide the full frame size.
+        bounce_buffer_size_px: 6400
+        dma_burst_size: 64
+        hsync_gpio_num: -1
+        vsync_gpio_num: -1
+        de_gpio_num: 4
+        pclk_gpio_num: 5
+        disp_gpio_num: -1
+        # D0..D15 = B3..B7, G2..G7, R3..R7.
+        data_gpio_nums: [17, 16, 15, 7, 6, 10, 9, 46, 3, 8, 18, 45, 48, 47, 21, 14]
+        timings:
+          pclk_hz: 18000000
+          h_res: 800
+          v_res: 480
+          # Use the vendor hsw/vsw definitions on their corresponding axes.
+          # The vendor struct initializer accidentally interchanges the two.
+          hsync_pulse_width: 48
+          hsync_back_porch: 88
+          hsync_front_porch: 40
+          vsync_pulse_width: 3
+          vsync_back_porch: 32
+          vsync_front_porch: 13
+          flags:
+            hsync_idle_low: false
+            vsync_idle_low: false
+            de_idle_high: false
+            pclk_active_neg: true
+            pclk_idle_high: false
+        flags:
+          disp_active_low: false
+          refresh_on_demand: false
+          fb_in_psram: true
+          double_fb: false
+          no_fb: false
+          bb_invalidate_cache: false
+  # These devices share physical pins with the RGB bus.
+  - name: camera
+    gen_skip: true
+  - name: audio_dac
+    gen_skip: true
+  - name: audio_adc
+    gen_skip: true
+
+  - name: lcd_touch
+    type: lcd_touch
+    sub_type: i2c
+    chip: gt1158
+    version: default
+    depends_on: xl9555
+    dependencies:
+      espressif/esp_lcd_touch_gt1151: "^1.1.1"
+    config:
+      io_i2c_config:
+        control_phase_bytes: 1
+        dc_bit_offset: 0
+        lcd_cmd_bits: 16
+        lcd_param_bits: 0
+        scl_speed_hz: 100000
+        flags:
+          dc_low_on_data: false
+          disable_control_phase: true
+      touch_config:
+        x_max: 800
+        y_max: 480
+        # The board factory resets XL9555 P9 directly; the driver owns no reset GPIO.
+        rst_gpio_num: -1
+        int_gpio_num: 40
+        levels:
+          reset: 0
+          interrupt: 0
+        flags:
+          swap_xy: false
+          mirror_x: false
+          mirror_y: false
+    peripherals:
+      - i2c_name: i2c_touch
+        i2c_addr: 0x28  # BMGR 8-bit form; measured 7-bit address is 0x14.
+
+peripherals:
+  - name: i2c_camera
+    gen_skip: true
+  - name: i2s_audio_out
+    gen_skip: true
+  - name: i2s_audio_in
+    gen_skip: true
+
+  - name: i2c_touch
+    type: i2c
+    role: master
+    config:
+      port: 1
+      clk_source: I2C_CLK_SRC_DEFAULT
+      pins:
+        sda: 39
+        scl: 38
+      enable_internal_pullup: true
+      glitch_count: 7
+      intr_priority: 1

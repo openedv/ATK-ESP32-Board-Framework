@@ -1,0 +1,7 @@
+dependencies:
+  espressif/esp_board_manager:
+    version: ">=0.7.0"
+    require: public
+  atk_esp32_boards:
+    override_path: ../../../
+    version: "*"

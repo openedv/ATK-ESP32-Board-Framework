@@ -1,0 +1,241 @@
+devices:
+  # XL9555 pins are controlled through the expander API; P2 enables PA low.
+  - name: xl9555
+    type: gpio_expander
+    chip: xl9555
+    version: default
+    config:
+      max_pins: 16
+      output_io_mask: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+      # Enable PA on P2 for the base audio board; RGB amends keep it off.
+      output_io_level_mask: [0, 1, 0, 1, 1, 1, 1, 1, 1, 1]
+      input_io_mask: [0, 1, 12, 13, 14, 15]
+    peripherals:
+      - i2c_name: i2c_main
+        i2c_addr: 0x40  # BMGR uses the 8-bit address; hardware 7-bit address is 0x20.
+
+  # ES8388 is full duplex in hardware. Board Manager models each direction as
+  # one logical codec device.
+  - name: audio_dac
+    chip: es8388
+    type: audio_codec
+    version: default
+    depends_on: xl9555
+    config:
+      adc_enabled: false
+      dac_enabled: true
+      sys_cfg:
+        is_master: false
+        no_mclk: false
+      dac_cfg:
+        ref_enable: true
+    peripherals:
+      - i2s_name: i2s_audio_out
+      - i2c_name: i2c_main
+        # esp_codec_dev expects the codec header's 8-bit address and shifts it
+        # right once when registering the ESP-IDF 7-bit I2C device.
+        address: 0x20
+        frequency: 400000
+
+  - name: audio_adc
+    chip: es8388
+    type: audio_codec
+    version: default
+    config:
+      adc_enabled: true
+      dac_enabled: false
+      sys_cfg:
+        is_master: false
+        no_mclk: false
+      adc_cfg:
+        digital_mic: false
+        label: [FL, FR]
+    peripherals:
+      - i2s_name: i2s_audio_in
+      - i2c_name: i2c_main
+        address: 0x20
+        frequency: 400000
+
+  - name: display_lcd
+    chip: st7789
+    type: display_lcd
+    sub_type: spi
+    version: default
+    depends_on: xl9555
+    config:
+      swap_xy: true
+      mirror_x: true
+      mirror_y: false
+      # The vendor initialization sends ST7789 INVON (0x21).
+      invert_color: true
+      x_max: 320
+      y_max: 240
+      need_reset: false
+      frame_format: RGB565_BE
+      io_spi_config:
+        cs_gpio_num: 21
+        dc_gpio_num: 40
+        spi_mode: 0
+        pclk_hz: 60000000
+        trans_queue_depth: 10
+        lcd_cmd_bits: 8
+        lcd_param_bits: 8
+        cs_ena_pretrans: 0
+        cs_ena_posttrans: 0
+        flags:
+          dc_high_on_cmd: false
+          dc_low_on_data: false
+          dc_low_on_param: false
+          octal_mode: false
+          quad_mode: false
+          sio_mode: false
+          psram_dma_direct: false
+          lsb_first: false
+          cs_high_active: false
+      lcd_panel_config:
+        reset_gpio_num: -1
+        rgb_ele_order: LCD_RGB_ELEMENT_ORDER_RGB
+        data_endian: LCD_RGB_DATA_ENDIAN_BIG
+        bits_per_pixel: 16
+        flags:
+          reset_active_high: false
+    peripherals:
+      # The common name binding remains valid when an amend selects pure RGB.
+      - name: spi_shared
+
+  - name: fs_sdcard
+    type: fs_fat
+    sub_type: spi
+    version: default
+    config:
+      mount_point: "/sdcard"
+      vfs_config:
+        format_if_mount_failed: false
+        max_files: 5
+        allocation_unit_size: 16384
+      sub_config:
+        cs_gpio_num: 2
+    peripherals:
+      - spi_name: spi_shared
+
+  - name: camera
+    type: camera
+    sub_type: dvp
+    version: default
+    depends_on: xl9555
+    config:
+      dvp_config:
+        reset_io: -1
+        pwdn_io: -1
+        vsync_io: 47
+        data_width: CAM_CTLR_DATA_WIDTH_8
+        de_io: 48
+        pclk_io: 45
+        xclk_io: -1
+        xclk_freq: 24000000
+        data_io:
+          data_io_0: 4
+          data_io_1: 5
+          data_io_2: 6
+          data_io_3: 7
+          data_io_4: 15
+          data_io_5: 16
+          data_io_6: 17
+          data_io_7: 18
+          data_io_8: -1
+          data_io_9: -1
+          data_io_10: -1
+          data_io_11: -1
+          data_io_12: -1
+          data_io_13: -1
+          data_io_14: -1
+          data_io_15: -1
+    peripherals:
+      - i2c_name: i2c_camera
+        frequency: 100000
+
+  - name: boot_button
+    type: button
+    sub_type: gpio
+    version: default
+    config:
+      active_level: 0
+      enable_power_save: false
+      disable_pull: false
+      long_press_time: 2000
+      short_press_time: 100
+    peripherals:
+      - gpio_name: gpio_boot
+
+  - name: key0_button
+    type: button
+    sub_type: custom
+    version: default
+    depends_on: xl9555
+    config:
+      long_press_time: 2000
+      short_press_time: 100
+
+  - name: key1_button
+    type: button
+    sub_type: custom
+    version: default
+    depends_on: xl9555
+    config:
+      long_press_time: 2000
+      short_press_time: 100
+
+  - name: key2_button
+    type: button
+    sub_type: custom
+    version: default
+    depends_on: xl9555
+    config:
+      long_press_time: 2000
+      short_press_time: 100
+
+  - name: key3_button
+    type: button
+    sub_type: custom
+    version: default
+    depends_on: xl9555
+    config:
+      long_press_time: 2000
+      short_press_time: 100
+
+  - name: status_led
+    chip: gpio_led
+    type: gpio_ctrl
+    version: default
+    config:
+      active_level: 1
+      default_level: 0
+    peripherals:
+      - gpio_name: gpio_led
+
+  # Polling adapters: interrupt outputs reach XL9555 P1/P0, not SoC GPIOs.
+  - name: ap3216c
+    type: custom
+    chip: ap3216c
+    version: default
+    config:
+      i2c_addr: 0x1e  # Seven-bit address passed directly to the custom driver.
+      frequency_hz: 400000
+    peripherals:
+      - name: i2c_main
+    dependencies:
+      atk_ap3216c:
+        version: "*"
+        override_path: "${BOARD_PATH}/packages/atk_ap3216c"
+
+  - name: qma6100p
+    type: custom
+    chip: qma6100p
+    version: default
+    config:
+      i2c_addr: 0x12  # Seven-bit address; AD0 is low on this board.
+      range_g: 8     # Supported full-scale ranges: 2, 4, 8, 16, 32 g.
+    peripherals:
+      - name: i2c_main
+    dependencies:
+      espressif/qma6100p: "^2.0.1"

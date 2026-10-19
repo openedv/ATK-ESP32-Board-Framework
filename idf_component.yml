@@ -1,0 +1,24 @@
+name: atk_esp32_boards
+version: "0.7.0"
+description: ESP Board Manager definitions for ALIENTEK ATK ESP32-S3 boards
+url: https://github.com/openedv/ATK-ESP32-Board-Framework
+documentation: https://github.com/openedv/ATK-ESP32-Board-Framework#readme
+issues: https://github.com/openedv/ATK-ESP32-Board-Framework/issues
+license: Apache-2.0
+
+tags:
+  - esp_board_manager
+  - board_manager
+  - boards
+
+dependencies:
+  espressif/esp_board_manager:
+    version: ">=0.7.4"
+    require: public
+
+files:
+  exclude:
+    - ".git"
+    - ".github"
+    - ".cursor"
+    - "ci"

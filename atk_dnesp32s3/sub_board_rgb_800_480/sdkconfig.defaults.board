@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2026 ALIENTEK
+# SPDX-License-Identifier: Apache-2.0
+
+# The vendor RGB example uses the board's octal PSRAM at 80 MHz.
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_80M=y
+CONFIG_SPIRAM_USE_MALLOC=y
+
+# RGB replaces the DVP camera in this configuration.
+CONFIG_ESP_VIDEO_ENABLE_DVP_VIDEO_DEVICE=n

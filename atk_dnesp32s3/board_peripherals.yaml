@@ -1,0 +1,164 @@
+peripherals:
+  # Shared control bus: ES8388, XL9555, AP3216C, QMA6100P, and AT24C02.
+  - name: i2c_main
+    type: i2c
+    role: master
+    config:
+      port: 0
+      clk_source: I2C_CLK_SRC_DEFAULT
+      pins:
+        sda: 41
+        scl: 42
+      enable_internal_pullup: true
+      glitch_count: 7
+      intr_priority: 1
+
+  # Dedicated SCCB bus for the camera module.
+  - name: i2c_camera
+    type: i2c
+    role: master
+    config:
+      port: 1
+      clk_source: I2C_CLK_SRC_DEFAULT
+      pins:
+        sda: 39
+        scl: 38
+      enable_internal_pullup: true
+      glitch_count: 7
+      intr_priority: 1
+
+  # SPI2 is shared by the ST7789 panel and the microSD card.
+  - name: spi_shared
+    type: spi
+    role: master
+    config:
+      spi_bus_config:
+        spi_port: SPI2_HOST
+        mosi_io_num: 11
+        miso_io_num: 13
+        sclk_io_num: 12
+        quadwp_io_num: -1
+        quadhd_io_num: -1
+        max_transfer_sz: 15360
+        dma_burst_size: 0
+        flags: 0
+        isr_cpu_id: ESP_INTR_CPU_AFFINITY_AUTO
+        intr_flags: 0
+
+  # The ES8388 is I2S slave; ESP32-S3 is clock master.
+  - name: i2s_audio_out
+    type: i2s
+    role: master
+    format: std-out
+    config:
+      port: 0
+      sample_rate_hz: 44100
+      clk_src: I2S_CLK_SRC_DEFAULT
+      ext_clk_freq_hz: 0
+      mclk_multiple: 256
+      bclk_div: 8
+      data_bit_width: 16
+      slot_bit_width: I2S_SLOT_BIT_WIDTH_AUTO
+      slot_mode: I2S_SLOT_MODE_STEREO
+      slot_mask: I2S_STD_SLOT_BOTH
+      ws_width: 16
+      ws_pol: false
+      bit_shift: true
+      left_align: true
+      big_endian: false
+      bit_order_lsb: false
+      pins:
+        mclk: 3
+        bclk: 46
+        ws: 9
+        dout: 10
+        din: 14
+      invert_flags:
+        mclk_inv: false
+        bclk_inv: false
+        ws_inv: false
+
+  - name: i2s_audio_in
+    type: i2s
+    role: master
+    format: std-in
+    config:
+      port: 0
+      sample_rate_hz: 44100
+      clk_src: I2S_CLK_SRC_DEFAULT
+      ext_clk_freq_hz: 0
+      mclk_multiple: 256
+      bclk_div: 8
+      data_bit_width: 16
+      slot_bit_width: I2S_SLOT_BIT_WIDTH_AUTO
+      slot_mode: I2S_SLOT_MODE_STEREO
+      slot_mask: I2S_STD_SLOT_BOTH
+      ws_width: 16
+      ws_pol: false
+      bit_shift: true
+      left_align: true
+      big_endian: false
+      bit_order_lsb: false
+      pins:
+        mclk: 3
+        bclk: 46
+        ws: 9
+        dout: 10
+        din: 14
+      invert_flags:
+        mclk_inv: false
+        bclk_inv: false
+        ws_inv: false
+
+  - name: gpio_boot
+    type: gpio
+    role: io
+    config:
+      pin: 0
+      mode: GPIO_MODE_INPUT
+      pull_up: true
+      pull_down: false
+      intr_type: GPIO_INTR_DISABLE
+      default_level: 0
+
+  - name: gpio_led
+    type: gpio
+    role: io
+    config:
+      pin: 1
+      mode: GPIO_MODE_OUTPUT
+      pull_up: false
+      pull_down: false
+      intr_type: GPIO_INTR_DISABLE
+      default_level: 0
+
+  # IR receiver: GPIO2 also serves as the SD card CS. Release SD before use.
+  - name: rmt_ir_rx
+    type: rmt
+    role: rx
+    init_skip: true
+    config:
+      gpio_num: 2
+      clk_src: RMT_CLK_SRC_DEFAULT
+      resolution_hz: 1000000
+      mem_block_symbols: 64
+      intr_priority: 0
+      flags:
+        invert_in: false
+        with_dma: false
+
+  # IR transmitter: select the IR jumper. GPIO8 conflicts with RGB LCD data.
+  - name: rmt_ir_tx
+    type: rmt
+    role: tx
+    init_skip: true
+    config:
+      gpio_num: 8
+      clk_src: RMT_CLK_SRC_DEFAULT
+      resolution_hz: 1000000
+      mem_block_symbols: 64
+      trans_queue_depth: 4
+      intr_priority: 0
+      flags:
+        invert_out: false
+        with_dma: false
